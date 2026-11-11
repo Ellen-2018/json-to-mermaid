@@ -91,13 +91,15 @@ export default function Home() {
             Free Online Tool
           </span>
         </div>
-        <button
-          onClick={() => setShowProModal(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all shadow-lg shadow-indigo-500/20"
+        <a
+          href="https://lyjaneyu1-tools.lemonsqueezy.com/checkout/buy/07b30a72-7333-4f47-943c-3158a3cbe438"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium px-4 py-2 rounded-lg transition-all shadow-md cursor-pointer"
         >
           <Sparkles className="w-4 h-4" />
           Upgrade to Pro ($4.99)
-        </button>
+        </a>
       </header>
 
       {/* 主工作区 */}
