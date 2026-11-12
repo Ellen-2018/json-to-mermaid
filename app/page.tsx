@@ -61,7 +61,62 @@ export default function Home() {
   const [showProModal, setShowProModal] = useState(false);
   const renderCount = useRef(0);
 
-  // 实时渲染逻辑
+  // 新增：Pro 会员状态与激活弹窗所需的状态
+  const [isPro, setIsPro] = useState(false);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [activating, setActivating] = useState(false);
+  const [activateError, setActivateError] = useState("");
+
+  // 新增：每次打开网页时，检查浏览器缓存里是否已经激活过
+  useEffect(() => {
+    const savedPro = localStorage.getItem("json2mermaid_is_pro");
+    if (savedPro === "true") {
+      setIsPro(true);
+    }
+  }, []);
+
+  // 新增：点击 Activate 按钮时，把激活码发给 Lemon Squeezy 官方验证
+  const handleActivateLicense = async () => {
+    if (!licenseKey.trim()) {
+      setActivateError("Please enter your license key.");
+      return;
+    }
+
+    setActivating(true);
+    setActivateError("");
+
+    try {
+      const response = await fetch("https://api.lemonsqueezy.com/v1/licenses/activate", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          license_key: licenseKey.trim(),
+          instance_name: "JSON2Mermaid_Web_User",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.activated) {
+        setIsPro(true);
+        localStorage.setItem("json2mermaid_is_pro", "true");
+        localStorage.setItem("json2mermaid_license_key", licenseKey.trim());
+        setShowProModal(false);
+        alert("🎉 Pro version unlocked successfully!");
+      } else {
+        setActivateError(data.error || "Invalid license key or activation limit reached.");
+      }
+    } catch (err) {
+      setActivateError("Network error. Please try again.");
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  // 原有的实时渲染逻辑（保持不变）
   useEffect(() => {
     const renderDiagram = async () => {
       try {
@@ -91,15 +146,20 @@ export default function Home() {
             Free Online Tool
           </span>
         </div>
-        <a
-          href="https://lyjaneyu1-tools.lemonsqueezy.com/checkout/buy/07b30a72-7333-4f47-943c-3158a3cbe438"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium px-4 py-2 rounded-lg transition-all shadow-md cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4" />
-          Upgrade to Pro ($4.99)
-        </a>
+        {/* 👉 替换原有的 <a> 标签 */}
+        {isPro ? (
+          <span className="flex items-center gap-1.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 font-semibold px-3.5 py-1.5 rounded-lg text-sm">
+            👑 Pro Unlocked
+          </span>
+        ) : (
+          <button
+            onClick={() => setShowProModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium px-4 py-2 rounded-lg transition-all shadow-md cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            Upgrade to Pro ($4.99)
+          </button>
+        )}
       </header>
 
       {/* 主工作区 */}
@@ -132,8 +192,20 @@ export default function Home() {
               <Eye className="w-4 h-4 text-cyan-400" /> Live Visual Diagram
             </span>
             <button
-              onClick={() => setShowProModal(true)}
-              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition-colors"
+              onClick={() => {
+                if (!isPro) {
+                  setShowProModal(true);
+                  return;
+                }
+                const blob = new Blob([svgOutput], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'json2mermaid-diagram.svg';
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" /> Export SVG/PNG
             </button>
@@ -150,41 +222,61 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      {/* 预留付费弹窗（用于接入 Lemon Squeezy） */}
+      
+      {/* 👉 替换原有的弹窗代码 */}
       {showProModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
-            <h3 className="text-xl font-bold text-white mb-2">Unlock Pro Features</h3>
-            <p className="text-slate-400 text-sm mb-6">
-              Get high-resolution SVG exports, unlimited AI structure optimization, and custom node styling.
-            </p>
-            <ul className="space-y-3 mb-6 text-sm text-slate-300">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-indigo-400" /> Unlimited HD SVG & PNG Export
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-indigo-400" /> AI Auto-Layout Improvement
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-indigo-400" /> Commercial Use License
-              </li>
-            </ul>
-            <div className="flex gap-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative text-slate-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                JSON2Mermaid Pro
+              </h3>
               <button
                 onClick={() => setShowProModal(false)}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                className="text-slate-400 hover:text-white text-xl leading-none cursor-pointer"
               >
-                Cancel
+                ×
               </button>
-              <button
-                onClick={() => {
-                  alert('Here we will connect your Lemon Squeezy checkout URL!');
-                }}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-indigo-500/25"
-              >
-                Get Lifetime Access ($4.99)
-              </button>
+            </div>
+
+            <p className="text-sm text-slate-300 mb-4">
+              Unlock unlimited diagram exports (SVG/PNG), watermark-free charts, and large JSON parsing with a one-time payment.
+            </p>
+
+            {/* 购买链接：这里保持你正确的 Lemon Squeezy Checkout URL */}
+            <a
+              href="https://lyjaneyu1-tools.lemonsqueezy.com/checkout/buy/07b30a72-7333-4f47-943c-3158a3cbe438"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-2.5 rounded-lg transition-all mb-6 shadow-md"
+            >
+              Buy License Key — $4.99 (One-time)
+            </a>
+
+            <div className="border-t border-slate-800 pt-4">
+              <label className="block text-xs font-medium text-slate-400 mb-2">
+                Already purchased? Enter your License Key:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={licenseKey}
+                  onChange={(e) => setLicenseKey(e.target.value)}
+                  placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
+                />
+                <button
+                  onClick={handleActivateLicense}
+                  disabled={activating}
+                  className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
+                >
+                  {activating ? "Verifying..." : "Activate"}
+                </button>
+              </div>
+              {activateError && (
+                <p className="text-xs text-red-400 mt-2">{activateError}</p>
+              )}
             </div>
           </div>
         </div>
