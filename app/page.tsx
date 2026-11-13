@@ -145,6 +145,9 @@ export default function Home() {
           <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">
             Free Online Tool
           </span>
+          <span className="hidden sm:inline-flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded border border-emerald-500/20">
+            🔒 100% Client-Side & Private
+          </span>
         </div>
         {/* 👉 替换原有的 <a> 标签 */}
         {isPro ? (
@@ -191,24 +194,38 @@ export default function Home() {
             <span className="flex items-center gap-2 font-medium">
               <Eye className="w-4 h-4 text-cyan-400" /> Live Visual Diagram
             </span>
-            <button
-              onClick={() => {
-                if (!isPro) {
-                  setShowProModal(true);
-                  return;
-                }
-                const blob = new Blob([svgOutput], { type: 'image/svg+xml;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'json2mermaid-diagram.svg';
-                link.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" /> Export SVG/PNG
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  const code = jsonToMermaid(jsonInput);
+                  navigator.clipboard.writeText(code);
+                  alert("Mermaid code copied to clipboard!");
+                }}
+                className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition-colors cursor-pointer"
+              >
+                Copy Mermaid Code
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!isPro) {
+                    setShowProModal(true);
+                    return;
+                  }
+                  const blob = new Blob([svgOutput], { type: 'image/svg+xml;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = 'json2mermaid-diagram.svg';
+                  link.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" /> Export SVG/PNG
+              </button>
+            </div>
+
           </div>
           <div className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-6 flex items-center justify-center overflow-auto min-h-[400px]">
             {svgOutput ? (
